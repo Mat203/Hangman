@@ -18,6 +18,18 @@ private:
 public:
     void drawNext() {
     }
+
+    int getHangmanParts() {
+        return hangmanParts;
+    }
+
+    void resetHangmanParts() {
+        hangmanParts = 0;
+    }
+
+    void addHangmanParts() {
+        hangmanParts++;
+    }
 };
 
 class WordManager {
@@ -26,6 +38,7 @@ private:
 public:
     std::string pickWord(Difficulty difficulty) {
         int randomIndex = rand() % wordDictionary[difficulty].size();
+        std::cout << "Right word: " << wordDictionary[difficulty][randomIndex] << std::endl;
         return wordDictionary[difficulty][randomIndex];
     }
 
@@ -67,20 +80,38 @@ private:
     Hangman hangman;
     WordManager wordManager;
 public:
-    HangmanGame(Difficulty difficulty) {
+    HangmanGame(Difficulty difficulty) : difficulty(difficulty) {
+        wordManager.readWordDictionary("text.txt");
+        reset();
     }
     void reset() {
+        secretWord = wordManager.pickWord(difficulty);
+        guessedWord = std::string(secretWord.size(), '_');
+        usedLetters.clear();
+        hangman.resetHangmanParts();
     }
     bool isGameOver() {
+        return hangman.getHangmanParts() >= 6 || guessedWord == secretWord;
     }
     std::string getGuessedWord() {
+        return guessedWord;
     }
     std::vector<char> getUsedLetters() {
+        return usedLetters;
     }
     void guessLetter(char letter) {
+        usedLetters.push_back(letter);
+        if (secretWord.find(letter) == std::string::npos) {
+            hangman.drawNext();
+            hangman.addHangmanParts();
+        }
+        else {
+            guessedWord = wordManager.updateGuessedWord(secretWord, guessedWord, letter);
+        }
     }
 };
 
+/*
 class Renderer {
 private:
     const int windowSize;
@@ -102,6 +133,7 @@ public:
     void drawGameEndMessage(HangmanGame game) {
     }
 };
+*/
 
 int main() {
     WordManager wm;

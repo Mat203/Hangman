@@ -1,0 +1,3 @@
+Easy, cat, car, bar, far
+Medium, table, stable, weather
+Hard, magnificent, difficulty, perfection
