@@ -12,6 +12,12 @@ enum Difficulty {
     Hard
 };
 
+enum GameState {
+    SelectingDifficulty,
+    InProgress,
+    GameOver
+};
+
 class Hangman {
 private:
     int hangmanParts;
@@ -79,30 +85,55 @@ private:
     Difficulty difficulty;
     Hangman hangman;
     WordManager wordManager;
+    GameState gameState;
+
 public:
     HangmanGame(Difficulty difficulty) : difficulty(difficulty) {
         wordManager.readWordDictionary("text.txt");
+        gameState = SelectingDifficulty;
         reset();
     }
+
+    GameState getGameState() const {
+        return gameState;
+    }
+
+    void setGameState(GameState gameState) {
+        this->gameState = gameState;
+    }
+
     void reset() {
         secretWord = wordManager.pickWord(difficulty);
         guessedWord = std::string(secretWord.size(), '_');
         usedLetters.clear();
         hangman.resetHangmanParts();
     }
+
     bool isGameOver() {
         return hangman.getHangmanParts() >= 6 || guessedWord == secretWord;
     }
-    std::string getGuessedWord() {
+
+    std::string getGuessedWord() const {
         return guessedWord;
     }
 
-    std::string getSecretWord() {
+    std::string getSecretWord() const {
         return secretWord;
     }
-    std::vector<char> getUsedLetters() {
+
+    std::vector<char> getUsedLetters() const {
         return usedLetters;
     }
+
+    int getRemainingAttempts() {
+        return std::max(6 - hangman.getHangmanParts(), 0);
+    }
+
+    void restart(Difficulty newDifficulty) {
+        difficulty = newDifficulty;
+        reset();
+    }
+
     void guessLetter(char letter) {
         usedLetters.push_back(letter);
         if (secretWord.find(letter) == std::string::npos) {
@@ -112,13 +143,6 @@ public:
         else {
             guessedWord = wordManager.updateGuessedWord(secretWord, guessedWord, letter);
         }
-    }
-
-    int getRemainingAttempts() {
-        if (6 - hangman.getHangmanParts() >= 0)
-            return 6 - hangman.getHangmanParts();
-        else
-            return 0;
     }
 };
 
@@ -135,7 +159,6 @@ public:
         while (window.isOpen()) {
             processEvents(game);
             render(game);
-            drawGameEndMessage(game);
         }
     }
 
@@ -146,9 +169,22 @@ public:
                 window.close();
             else if (event.type == sf::Event::TextEntered) {
                 if (event.text.unicode < 128) {
-                    game.guessLetter(static_cast<char>(event.text.unicode));
+                    if (game.getGameState() == SelectingDifficulty) {
+                        handleDifficultyInput(game, static_cast<char>(event.text.unicode));
+                    }
+                    else if (game.getGameState() == InProgress) {
+                        game.guessLetter(static_cast<char>(event.text.unicode));
+                    }
                 }
             }
+        }
+    }
+
+    void handleDifficultyInput(HangmanGame& game, char input) {
+        if (input >= '1' && input <= '3') {
+            Difficulty selectedDifficulty = static_cast<Difficulty>(input - '1');
+            game.restart(selectedDifficulty);
+            game.setGameState(InProgress);
         }
     }
 
@@ -163,7 +199,16 @@ public:
             bFontLoaded = true;
         }
 
-        if (!game.isGameOver()) {
+        if (game.getGameState() == SelectingDifficulty) {
+            sf::Text selectDifficultyText;
+            selectDifficultyText.setFont(font);
+            selectDifficultyText.setString("Choose a difficulty: 1 - Easy, 2 - Medium, 3 - Hard");
+            selectDifficultyText.setCharacterSize(24);
+            selectDifficultyText.setPosition(10, windowSize / 2);
+            window.draw(selectDifficultyText);
+        }
+
+        else if (game.getGameState() == InProgress) {
             for (int i = 0; i < game.getGuessedWord().size(); i++) {
                 sf::Text text;
                 text.setFont(font);
@@ -189,10 +234,12 @@ public:
             attemptsText.setCharacterSize(24);
             attemptsText.setPosition(windowSize - 200, 10);
             window.draw(attemptsText);
-
+            if (game.isGameOver()) {
+                game.setGameState(GameOver);
+            }
         }
         //win message
-        if (game.isGameOver()) {
+        else if (game.getGameState() == GameOver) {
             sf::Text gameOverText;
             gameOverText.setFont(font);
             gameOverText.setCharacterSize(20);
@@ -209,12 +256,6 @@ public:
         }
 
         window.display();
-    }
-
-    void drawGameEndMessage(HangmanGame& game) {
-        if (game.isGameOver()) {
-            std::cout << "Game over. The word was: " << game.getGuessedWord() << std::endl;
-        }
     }
 };
 
