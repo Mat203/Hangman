@@ -113,6 +113,13 @@ public:
             guessedWord = wordManager.updateGuessedWord(secretWord, guessedWord, letter);
         }
     }
+
+    int getRemainingAttempts() {
+        if (6 - hangman.getHangmanParts() >= 0)
+            return 6 - hangman.getHangmanParts();
+        else
+            return 0;
+    }
 };
 
 class Renderer {
@@ -155,21 +162,52 @@ public:
             font.loadFromFile("C:\\Users\\User\\Desktop\\IT\\PP\\Hangman\\Arial.ttf"); 
             bFontLoaded = true;
         }
-        for (int i = 0; i < game.getGuessedWord().size(); i++) {
-            sf::Text text;
-            text.setFont(font);
-            text.setString(std::string(1, game.getGuessedWord()[i]));
-            text.setCharacterSize(24);
-            text.setPosition(i * cellSize + cellSize / 4, windowSize / 2 + cellSize / 4);
-            window.draw(text);
+
+        if (!game.isGameOver()) {
+            for (int i = 0; i < game.getGuessedWord().size(); i++) {
+                sf::Text text;
+                text.setFont(font);
+                text.setString(std::string(1, game.getGuessedWord()[i]));
+                text.setCharacterSize(24);
+                text.setPosition(i * cellSize + cellSize / 4, windowSize / 2 + cellSize / 4);
+                window.draw(text);
+            }
+
+            //draw guessed word DELETE THEN
+            sf::Text guessedWordText;
+            guessedWordText.setFont(font);
+            guessedWordText.setString("Guessed Word: " + game.getSecretWord());
+            guessedWordText.setCharacterSize(24);
+            guessedWordText.setPosition(10, 10);
+            window.draw(guessedWordText);
+
+
+            //draw attempts DELETE THEN
+            sf::Text attemptsText;
+            attemptsText.setFont(font);
+            attemptsText.setString("Attempts left: " + std::to_string(game.getRemainingAttempts()));
+            attemptsText.setCharacterSize(24);
+            attemptsText.setPosition(windowSize - 200, 10);
+            window.draw(attemptsText);
+
+        }
+        //win message
+        if (game.isGameOver()) {
+            sf::Text gameOverText;
+            gameOverText.setFont(font);
+            gameOverText.setCharacterSize(20);
+            gameOverText.setPosition(0, windowSize / 2 - 50);
+
+            if (game.getGuessedWord() == game.getSecretWord()) {
+                gameOverText.setString("Congratulations! You guessed the word!");
+            }
+            else {
+                gameOverText.setString("Game over. The word was: " + game.getSecretWord());
+            }
+
+            window.draw(gameOverText);
         }
 
-        sf::Text guessedWordText;
-        guessedWordText.setFont(font);
-        guessedWordText.setString("Guessed Word: " + game.getSecretWord());
-        guessedWordText.setCharacterSize(24);
-        guessedWordText.setPosition(10, 10);
-        window.draw(guessedWordText);
         window.display();
     }
 
