@@ -22,8 +22,6 @@ class Hangman {
 private:
     int hangmanParts;
 public:
-    void drawNext() {
-    }
 
     int getHangmanParts() {
         return hangmanParts;
@@ -135,9 +133,11 @@ public:
     }
 
     void guessLetter(char letter) {
+        if (std::find(usedLetters.begin(), usedLetters.end(), letter) != usedLetters.end()) {
+            return;
+        }
         usedLetters.push_back(letter);
         if (secretWord.find(letter) == std::string::npos) {
-            hangman.drawNext();
             hangman.addHangmanParts();
         }
         else {
