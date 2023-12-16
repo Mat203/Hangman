@@ -96,6 +96,10 @@ public:
     std::string getGuessedWord() {
         return guessedWord;
     }
+
+    std::string getSecretWord() {
+        return secretWord;
+    }
     std::vector<char> getUsedLetters() {
         return usedLetters;
     }
@@ -111,48 +115,76 @@ public:
     }
 };
 
-/*
 class Renderer {
 private:
     const int windowSize;
     const int cellSize;
     sf::RenderWindow window;
 public:
-    Renderer() : windowSize(600), cellSize(30) {
+    Renderer() : windowSize(600), cellSize(30), window(sf::VideoMode(windowSize, windowSize), "Hangman Game") {
     }
-    void run(HangmanGame game) {
+
+    void run(HangmanGame& game) {
+        while (window.isOpen()) {
+            processEvents(game);
+            render(game);
+            drawGameEndMessage(game);
+        }
     }
-    void initWindow() {
+
+    void processEvents(HangmanGame& game) {
+        sf::Event event;
+        while (window.pollEvent(event)) {
+            if (event.type == sf::Event::Closed)
+                window.close();
+            else if (event.type == sf::Event::TextEntered) {
+                if (event.text.unicode < 128) {
+                    game.guessLetter(static_cast<char>(event.text.unicode));
+                }
+            }
+        }
     }
-    void processEvents(HangmanGame game) {
+
+    void render(HangmanGame& game) {
+        window.clear();
+        sf::RectangleShape rectangle(sf::Vector2f(cellSize - 50, cellSize - 50));
+        static sf::Font font;
+        bool bFontLoaded = false;
+        if (!bFontLoaded)
+        {
+            font.loadFromFile("C:\\Users\\User\\Desktop\\IT\\PP\\Hangman\\Arial.ttf"); 
+            bFontLoaded = true;
+        }
+        for (int i = 0; i < game.getGuessedWord().size(); i++) {
+            sf::Text text;
+            text.setFont(font);
+            text.setString(std::string(1, game.getGuessedWord()[i]));
+            text.setCharacterSize(24);
+            text.setPosition(i * cellSize + cellSize / 4, windowSize / 2 + cellSize / 4);
+            window.draw(text);
+        }
+
+        sf::Text guessedWordText;
+        guessedWordText.setFont(font);
+        guessedWordText.setString("Guessed Word: " + game.getSecretWord());
+        guessedWordText.setCharacterSize(24);
+        guessedWordText.setPosition(10, 10);
+        window.draw(guessedWordText);
+        window.display();
     }
-    void handleKeyPress(HangmanGame game, char key) {
-    }
-    void render(HangmanGame game) {
-    }
-    void drawGameEndMessage(HangmanGame game) {
+
+    void drawGameEndMessage(HangmanGame& game) {
+        if (game.isGameOver()) {
+            std::cout << "Game over. The word was: " << game.getGuessedWord() << std::endl;
+        }
     }
 };
-*/
+
+
 
 int main() {
-    WordManager wm;
-    wm.readWordDictionary("text.txt"); 
-
-    std::string easyWord = wm.pickWord(Easy);
-    std::cout << "Easy word: " << easyWord << std::endl;
-
-    std::string mediumWord = wm.pickWord(Medium);
-    std::cout << "Medium word: " << mediumWord << std::endl;
-
-    std::string hardWord = wm.pickWord(Hard);
-    std::cout << "Hard word: " << hardWord << std::endl;
-
-    std::string secretWord = "table";
-    std::string guessedWord = "_____";
-    char letter = 'a';
-    std::string updatedWord = wm.updateGuessedWord(secretWord, guessedWord, letter);
-    std::cout << "Updated word: " << updatedWord << std::endl;
-
+    HangmanGame game(Medium);
+    Renderer renderer;
+    renderer.run(game);
     return 0;
 }
