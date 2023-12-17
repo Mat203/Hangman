@@ -87,9 +87,10 @@ private:
     GameState gameState;
     bool hintDisplayed;
     bool hintRequested;
+    bool hintUsed;
 
 public:
-    HangmanGame(Difficulty difficulty) : difficulty(difficulty), hintDisplayed(false) {
+    HangmanGame(Difficulty difficulty) : difficulty(difficulty), hintDisplayed(false), hintUsed(false) {
         wordManager.readWordDictionary("text.txt");
         gameState = SelectingDifficulty;
         reset();
@@ -142,7 +143,7 @@ public:
         usedLetters.push_back(letter);
         if (secretWord.find(letter) == std::string::npos) {
             hangman.addHangmanParts();
-            if (hangman.getHangmanParts() == 3 && !hintRequested) {
+            if (hangman.getHangmanParts() == 3 && !hintRequested && !hintUsed) {
                 hintRequested = true;
             }
         }
@@ -155,6 +156,20 @@ public:
         return hintRequested;
     }
 
+    void makeHintDisplayed() {
+        hintDisplayed = true;
+    }
+
+    bool isHintDisplayed() {
+        return hintDisplayed;
+    }
+
+    void isHintUsed() {
+        hintUsed = true;
+        hintDisplayed = false;
+        hintRequested = false;
+    }
+
     std::string getHint() {
         std::string missingLetters = "";
         for (char c : secretWord) {
@@ -163,8 +178,7 @@ public:
             }
         }
 
-        int randomIndex = rand() % secretWord.size();
-        hint = std::string(1, missingLetters[3]);
+        hint = std::string(1, missingLetters[1]);
         
         return hint;
     }
@@ -174,19 +188,30 @@ class Renderer {
 private:
     const int windowSize;
     const int cellSize;
+    sf::Font font;
     sf::RenderWindow window;
+    sf::Color grassGreen;
+    HangmanGame& game;
+    sf::Clock hintClock;
 public:
-    Renderer() : windowSize(600), cellSize(30), window(sf::VideoMode(windowSize, windowSize), "Hangman Game") {
-    }
-
-    void run(HangmanGame& game) {
-        while (window.isOpen()) {
-            processEvents(game);
-            render(game);
+    Renderer(HangmanGame& game) : game(game), windowSize(600), cellSize(30), window(sf::VideoMode(windowSize, windowSize), "Hangman Game"), grassGreen(124, 252, 0) {
+        bool bFontLoaded = false;
+        if (!bFontLoaded)
+        {
+            font.loadFromFile("C:\\Users\\User\\Desktop\\IT\\PP\\Hangman\\Arial.ttf");
+            bFontLoaded = true;
         }
     }
 
-    void processEvents(HangmanGame& game) {
+
+    void run() {
+        while (window.isOpen()) {
+            processEvents();
+            render();
+        }
+    }
+
+    void processEvents() {
         sf::Event event;
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed)
@@ -202,7 +227,8 @@ public:
                     else if (game.getGameState() == InProgress) {
                         game.guessLetter(static_cast<char>(event.text.unicode));
                     }
-                    else if (static_cast<char>(event.text.unicode) == 'h' && game.isHintRequested()) {
+                    if (event.text.unicode == 'h' && game.isHintRequested()) {
+                        game.makeHintDisplayed();
                     }
                 }
             }
@@ -217,17 +243,8 @@ public:
         }
     }
 
-    void render(HangmanGame& game) {
+    void render() {
         window.clear(sf::Color::White);
-
-        static sf::Font font;
-        bool bFontLoaded = false;
-        if (!bFontLoaded)
-        {
-            font.loadFromFile("C:\\Users\\User\\Desktop\\IT\\PP\\Hangman\\Arial.ttf");
-            bFontLoaded = true;
-        }
-        sf::Color grassGreen(124, 252, 0);
 
         if (game.getGameState() == SelectingDifficulty) {
             sf::Text selectDifficultyText;
@@ -258,6 +275,16 @@ public:
                 hintRequest.setPosition(windowSize / 2-200, windowSize / 2 + 50);
                 hintRequest.setFillColor(grassGreen);
                 window.draw(hintRequest);
+            }
+
+            if (game.isHintDisplayed()) {
+                if (hintClock.getElapsedTime().asSeconds() < 5) {
+                    displayHint();
+                }
+                else {
+                    game.isHintUsed();
+                }
+
             }
 
             //draw guessed word DELETE THEN
@@ -302,13 +329,23 @@ public:
 
         window.display();
     }
+
+    void displayHint() {
+        sf::Text hint;
+        hint.setFont(font);
+        hint.setString("Hint: " + game.getHint());
+        hint.setCharacterSize(24);
+        hint.setPosition(windowSize / 2, windowSize / 2 + 100);
+        hint.setFillColor(grassGreen);
+        window.draw(hint);
+    }
 };
 
 
 
 int main() {
     HangmanGame game(Medium);
-    Renderer renderer;
-    renderer.run(game);
+    Renderer renderer(game);
+    renderer.run();
     return 0;
 }
