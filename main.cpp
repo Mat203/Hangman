@@ -128,7 +128,7 @@ public:
     }
 
     int getRemainingAttempts() {
-        return std::max(6 - hangman.getHangmanParts(), 0);
+        return hangman.getHangmanParts();
     }
 
     void restart(Difficulty newDifficulty) {
@@ -296,7 +296,7 @@ public:
             guessedWordText.setFillColor(grassGreen);
             window.draw(guessedWordText);
 
-
+            drawHangman();
             //draw attempts DELETE THEN
             sf::Text attemptsText;
             attemptsText.setFont(font);
@@ -338,6 +338,52 @@ public:
         hint.setPosition(windowSize / 2, windowSize / 2 + 100);
         hint.setFillColor(grassGreen);
         window.draw(hint);
+    }
+
+    void drawHangman() {
+        int hangmanParts = game.getRemainingAttempts();
+
+        if (hangmanParts > 0) {
+            sf::CircleShape head(10);
+            head.setPosition(windowSize / 2-50, windowSize / 2);
+            head.setFillColor(grassGreen);
+            window.draw(head);
+        }
+
+        if (hangmanParts > 1) {
+            sf::RectangleShape body(sf::Vector2f(10, 20));
+            body.setPosition(windowSize / 2 + 10, windowSize / 2 + 20);
+            body.setFillColor(grassGreen);
+            window.draw(body);
+        }
+
+        if (hangmanParts > 2) {
+            sf::RectangleShape arm(sf::Vector2f(10, 20));
+            arm.setPosition(windowSize / 2, windowSize / 2 - 20);
+            arm.setFillColor(grassGreen);
+            window.draw(arm);
+        }
+
+        if (hangmanParts > 3) {
+            sf::RectangleShape arm(sf::Vector2f(10, 20));
+            arm.setPosition(windowSize / 2 + 20, windowSize / 2 + 20);
+            arm.setFillColor(grassGreen);
+            window.draw(arm);
+        }
+
+        if (hangmanParts > 4) {
+            sf::RectangleShape leg(sf::Vector2f(10, 20));
+            leg.setPosition(windowSize / 2 + 10, windowSize / 2 + 40);
+            leg.setFillColor(grassGreen);
+            window.draw(leg);
+        }
+
+        if (hangmanParts > 5) {
+            sf::RectangleShape leg(sf::Vector2f(10, 20));
+            leg.setPosition(windowSize / 2 + 20, windowSize / 2 + 40);
+            leg.setFillColor(grassGreen);
+            window.draw(leg);
+        }
     }
 };
 
