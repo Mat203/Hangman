@@ -80,13 +80,16 @@ private:
     std::string secretWord;
     std::string guessedWord;
     std::vector<char> usedLetters;
+    std::string hint;
     Difficulty difficulty;
     Hangman hangman;
     WordManager wordManager;
     GameState gameState;
+    bool hintDisplayed;
+    bool hintRequested;
 
 public:
-    HangmanGame(Difficulty difficulty) : difficulty(difficulty) {
+    HangmanGame(Difficulty difficulty) : difficulty(difficulty), hintDisplayed(false) {
         wordManager.readWordDictionary("text.txt");
         gameState = SelectingDifficulty;
         reset();
@@ -139,10 +142,31 @@ public:
         usedLetters.push_back(letter);
         if (secretWord.find(letter) == std::string::npos) {
             hangman.addHangmanParts();
+            if (hangman.getHangmanParts() == 3 && !hintRequested) {
+                hintRequested = true;
+            }
         }
         else {
             guessedWord = wordManager.updateGuessedWord(secretWord, guessedWord, letter);
         }
+    }
+
+    bool isHintRequested() {
+        return hintRequested;
+    }
+
+    std::string getHint() {
+        std::string missingLetters = "";
+        for (char c : secretWord) {
+            if (guessedWord.find(c) == std::string::npos) {
+                missingLetters += c;
+            }
+        }
+
+        int randomIndex = rand() % secretWord.size();
+        hint = std::string(1, missingLetters[3]);
+        
+        return hint;
     }
 };
 
@@ -178,6 +202,8 @@ public:
                     else if (game.getGameState() == InProgress) {
                         game.guessLetter(static_cast<char>(event.text.unicode));
                     }
+                    else if (static_cast<char>(event.text.unicode) == 'h' && game.isHintRequested()) {
+                    }
                 }
             }
         }
@@ -192,15 +218,16 @@ public:
     }
 
     void render(HangmanGame& game) {
-        window.clear();
-        sf::RectangleShape rectangle(sf::Vector2f(cellSize - 50, cellSize - 50));
+        window.clear(sf::Color::White);
+
         static sf::Font font;
         bool bFontLoaded = false;
         if (!bFontLoaded)
         {
-            font.loadFromFile("C:\\Users\\User\\Desktop\\IT\\PP\\Hangman\\Arial.ttf"); 
+            font.loadFromFile("C:\\Users\\User\\Desktop\\IT\\PP\\Hangman\\Arial.ttf");
             bFontLoaded = true;
         }
+        sf::Color grassGreen(124, 252, 0);
 
         if (game.getGameState() == SelectingDifficulty) {
             sf::Text selectDifficultyText;
@@ -208,6 +235,7 @@ public:
             selectDifficultyText.setString("Choose a difficulty: 1 - Easy, 2 - Medium, 3 - Hard");
             selectDifficultyText.setCharacterSize(24);
             selectDifficultyText.setPosition(10, windowSize / 2);
+            selectDifficultyText.setFillColor(grassGreen);
             window.draw(selectDifficultyText);
         }
 
@@ -217,8 +245,19 @@ public:
                 text.setFont(font);
                 text.setString(std::string(1, game.getGuessedWord()[i]));
                 text.setCharacterSize(24);
-                text.setPosition(i * cellSize + cellSize / 4, windowSize / 2 + cellSize / 4);
+                text.setPosition(windowSize / 2 - game.getGuessedWord().size() * cellSize / 2 + i * cellSize, windowSize / 2);
+                text.setFillColor(grassGreen);
                 window.draw(text);
+            }
+
+            if (game.isHintRequested()) {
+                sf::Text hintRequest;
+                hintRequest.setFont(font);
+                hintRequest.setString("Would you like a hint? Press 'h' for a hint.");
+                hintRequest.setCharacterSize(24);
+                hintRequest.setPosition(windowSize / 2-200, windowSize / 2 + 50);
+                hintRequest.setFillColor(grassGreen);
+                window.draw(hintRequest);
             }
 
             //draw guessed word DELETE THEN
@@ -227,6 +266,7 @@ public:
             guessedWordText.setString("Guessed Word: " + game.getSecretWord());
             guessedWordText.setCharacterSize(24);
             guessedWordText.setPosition(10, 10);
+            guessedWordText.setFillColor(grassGreen);
             window.draw(guessedWordText);
 
 
@@ -236,6 +276,7 @@ public:
             attemptsText.setString("Attempts left: " + std::to_string(game.getRemainingAttempts()));
             attemptsText.setCharacterSize(24);
             attemptsText.setPosition(windowSize - 200, 10);
+            attemptsText.setFillColor(grassGreen);
             window.draw(attemptsText);
             if (game.isGameOver()) {
                 game.setGameState(GameOver);
@@ -247,6 +288,7 @@ public:
             gameOverText.setFont(font);
             gameOverText.setCharacterSize(20);
             gameOverText.setPosition(0, windowSize / 2 - 50);
+            gameOverText.setFillColor(grassGreen);
 
             if (game.getGuessedWord() == game.getSecretWord()) {
                 gameOverText.setString("Congratulations! You guessed the word! Press '0' to restart");
