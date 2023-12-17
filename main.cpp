@@ -169,7 +169,10 @@ public:
                 window.close();
             else if (event.type == sf::Event::TextEntered) {
                 if (event.text.unicode < 128) {
-                    if (game.getGameState() == SelectingDifficulty) {
+                    if (event.text.unicode == '0' && game.getGameState() == GameOver) { 
+                        game.setGameState(SelectingDifficulty);
+                    }
+                    else if (game.getGameState() == SelectingDifficulty) {
                         handleDifficultyInput(game, static_cast<char>(event.text.unicode));
                     }
                     else if (game.getGameState() == InProgress) {
@@ -246,10 +249,10 @@ public:
             gameOverText.setPosition(0, windowSize / 2 - 50);
 
             if (game.getGuessedWord() == game.getSecretWord()) {
-                gameOverText.setString("Congratulations! You guessed the word!");
+                gameOverText.setString("Congratulations! You guessed the word! Press '0' to restart");
             }
             else {
-                gameOverText.setString("Game over. The word was: " + game.getSecretWord());
+                gameOverText.setString("Game over. The word was: " + game.getSecretWord() + " Press '0' to restart");
             }
 
             window.draw(gameOverText);
