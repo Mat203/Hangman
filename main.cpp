@@ -90,7 +90,7 @@ private:
     bool hintUsed;
 
 public:
-    HangmanGame(Difficulty difficulty) : difficulty(difficulty), hintDisplayed(false), hintUsed(false) {
+    HangmanGame(Difficulty difficulty) : difficulty(difficulty), hintRequested(false), hintDisplayed(false), hintUsed(false) {
         wordManager.readWordDictionary("text.txt");
         gameState = SelectingDifficulty;
         reset();
@@ -133,6 +133,9 @@ public:
 
     void restart(Difficulty newDifficulty) {
         difficulty = newDifficulty;
+        hintRequested = false;
+        hintUsed = false;
+        hintDisplayed = false;
         reset();
     }
 
@@ -184,6 +187,30 @@ public:
     }
 };
 
+class TextureManager {
+private:
+    sf::Texture treeTexture;
+    sf::Texture headTexture;
+    sf::Texture bodyTexture;
+    sf::Texture armTexture;
+    sf::Texture legTexture;
+
+public:
+    TextureManager() {
+        treeTexture.loadFromFile("C:\\Users\\User\\Desktop\\IT\\PP\\Hangman\\HangmanParts\\HangmanTree.png");
+        headTexture.loadFromFile("C:\\Users\\User\\Desktop\\IT\\PP\\Hangman\\HangmanParts\\HangmanHead.png");
+        bodyTexture.loadFromFile("C:\\Users\\User\\Desktop\\IT\\PP\\Hangman\\HangmanParts\\HangmanOnlyBody.png");
+        armTexture.loadFromFile("C:\\Users\\User\\Desktop\\IT\\PP\\Hangman\\HangmanParts\\HangmanAll.png");
+        legTexture.loadFromFile("C:\\Users\\User\\Desktop\\IT\\PP\\Hangman\\HangmanParts\\HangmanAll.png");
+    }
+
+    sf::Texture& getTreeTexture() { return treeTexture; }
+    sf::Texture& getHeadTexture() { return headTexture; }
+    sf::Texture& getBodyTexture() { return bodyTexture; }
+    sf::Texture& getArmTexture() { return armTexture; }
+    sf::Texture& getLegTexture() { return legTexture; }
+};
+
 class Renderer {
 private:
     const int windowSize;
@@ -192,14 +219,25 @@ private:
     sf::RenderWindow window;
     sf::Color grassGreen;
     HangmanGame& game;
+    TextureManager textureManager;
     sf::Clock hintClock;
+    sf::Sprite treeSprite;
+    sf::Sprite headSprite;
+    sf::Sprite bodySprite;
+    sf::Sprite armSprite;
+    sf::Sprite legSprite;
 public:
     Renderer(HangmanGame& game) : game(game), windowSize(600), cellSize(30), window(sf::VideoMode(windowSize, windowSize), "Hangman Game"), grassGreen(124, 252, 0) {
         bool bFontLoaded = false;
         if (!bFontLoaded)
         {
-            font.loadFromFile("C:\\Users\\User\\Desktop\\IT\\PP\\Hangman\\Arial.ttf");
             bFontLoaded = true;
+            font.loadFromFile("C:\\Users\\User\\Desktop\\IT\\PP\\Hangman\\Arial.ttf");
+            treeSprite.setTexture(textureManager.getTreeTexture());
+            headSprite.setTexture(textureManager.getHeadTexture());
+            bodySprite.setTexture(textureManager.getBodyTexture());
+            armSprite.setTexture(textureManager.getArmTexture());
+            legSprite.setTexture(textureManager.getLegTexture());
         }
     }
 
@@ -278,7 +316,7 @@ public:
             }
 
             if (game.isHintDisplayed()) {
-                if (hintClock.getElapsedTime().asSeconds() < 5) {
+                if (hintClock.getElapsedTime().asSeconds() < 7) {
                     displayHint();
                 }
                 else {
@@ -287,29 +325,12 @@ public:
 
             }
 
-            //draw guessed word DELETE THEN
-            sf::Text guessedWordText;
-            guessedWordText.setFont(font);
-            guessedWordText.setString("Guessed Word: " + game.getSecretWord());
-            guessedWordText.setCharacterSize(24);
-            guessedWordText.setPosition(10, 10);
-            guessedWordText.setFillColor(grassGreen);
-            window.draw(guessedWordText);
-
             drawHangman();
-            //draw attempts DELETE THEN
-            sf::Text attemptsText;
-            attemptsText.setFont(font);
-            attemptsText.setString("Attempts left: " + std::to_string(game.getRemainingAttempts()));
-            attemptsText.setCharacterSize(24);
-            attemptsText.setPosition(windowSize - 200, 10);
-            attemptsText.setFillColor(grassGreen);
-            window.draw(attemptsText);
             if (game.isGameOver()) {
                 game.setGameState(GameOver);
             }
         }
-        //win message
+        
         else if (game.getGameState() == GameOver) {
             sf::Text gameOverText;
             gameOverText.setFont(font);
@@ -343,18 +364,19 @@ public:
     void drawHangman() {
         int hangmanParts = game.getRemainingAttempts();
 
+        if (hangmanParts == 0) {
+            treeSprite.setPosition(5, 5);
+            window.draw(treeSprite);
+        }
+
         if (hangmanParts > 0) {
-            sf::CircleShape head(10);
-            head.setPosition(windowSize / 2-50, windowSize / 2);
-            head.setFillColor(grassGreen);
-            window.draw(head);
+            headSprite.setPosition(5, 5);
+            window.draw(headSprite);
         }
 
         if (hangmanParts > 1) {
-            sf::RectangleShape body(sf::Vector2f(10, 20));
-            body.setPosition(windowSize / 2 + 10, windowSize / 2 + 20);
-            body.setFillColor(grassGreen);
-            window.draw(body);
+            bodySprite.setPosition(5, 5);
+            window.draw(bodySprite);
         }
 
         if (hangmanParts > 2) {
