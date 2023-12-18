@@ -101,7 +101,7 @@ public:
         return hintUsed;
     }
 
-    void MakeHintUsed() {
+    void makeHintUsed() {
         hintUsed = true;
         hintDisplayed = false;
         hintRequested = false;
@@ -346,7 +346,7 @@ public:
                     displayHint();
                 }
                 else {
-                    game.hintManager.isHintUsed();
+                    game.hintManager.makeHintUsed();
                 }
 
             }
