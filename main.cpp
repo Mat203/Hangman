@@ -75,22 +75,76 @@ public:
 
 };
 
-class HangmanGame {
+class HintManager {
 private:
-    std::string secretWord;
-    std::string guessedWord;
-    std::vector<char> usedLetters;
     std::string hint;
-    Difficulty difficulty;
-    Hangman hangman;
-    WordManager wordManager;
-    GameState gameState;
     bool hintDisplayed;
     bool hintRequested;
     bool hintUsed;
 
 public:
-    HangmanGame(Difficulty difficulty) : difficulty(difficulty), hintRequested(false), hintDisplayed(false), hintUsed(false) {
+    HintManager() : hintDisplayed(false), hintRequested(false), hintUsed(false) {}
+
+    bool isHintRequested() {
+        return hintRequested;
+    }
+
+    void makeHintDisplayed() {
+        hintDisplayed = true;
+    }
+
+    bool isHintDisplayed() {
+        return hintDisplayed;
+    }
+
+    bool isHintUsed() {
+        return hintUsed;
+    }
+
+    void MakeHintUsed() {
+        hintUsed = true;
+        hintDisplayed = false;
+        hintRequested = false;
+    }
+
+    void requestHint() {
+        hintRequested = true;
+    }
+
+    void reset() {
+        hintUsed = false;
+        hintDisplayed = false;
+        hintRequested = false;
+    }
+
+    std::string getHint(const std::string& secretWord, const std::string& guessedWord) {
+        std::string missingLetters = "";
+        for (char c : secretWord) {
+            if (guessedWord.find(c) == std::string::npos) {
+                missingLetters += c;
+            }
+        }
+
+        hint = std::string(1, missingLetters[1]);
+
+        return hint;
+    }
+};
+
+class HangmanGame {
+public:
+    HintManager hintManager;
+private:
+    std::string secretWord;
+    std::string guessedWord;
+    std::vector<char> usedLetters;
+    Difficulty difficulty;
+    Hangman hangman;
+    WordManager wordManager;
+    GameState gameState;
+
+public:
+    HangmanGame(Difficulty difficulty) : difficulty(difficulty) {
         wordManager.readWordDictionary("text.txt");
         gameState = SelectingDifficulty;
         reset();
@@ -109,6 +163,7 @@ public:
         guessedWord = std::string(secretWord.size(), '_');
         usedLetters.clear();
         hangman.resetHangmanParts();
+        hintManager.reset();
     }
 
     bool isGameOver() {
@@ -133,9 +188,6 @@ public:
 
     void restart(Difficulty newDifficulty) {
         difficulty = newDifficulty;
-        hintRequested = false;
-        hintUsed = false;
-        hintDisplayed = false;
         reset();
     }
 
@@ -146,8 +198,8 @@ public:
         usedLetters.push_back(letter);
         if (secretWord.find(letter) == std::string::npos) {
             hangman.addHangmanParts();
-            if (hangman.getHangmanParts() == 3 && !hintRequested && !hintUsed) {
-                hintRequested = true;
+            if (hangman.getHangmanParts() == 3 && !hintManager.isHintRequested() && !hintManager.isHintUsed()) {
+                hintManager.requestHint();
             }
         }
         else {
@@ -155,44 +207,19 @@ public:
         }
     }
 
-    bool isHintRequested() {
-        return hintRequested;
-    }
-
-    void makeHintDisplayed() {
-        hintDisplayed = true;
-    }
-
-    bool isHintDisplayed() {
-        return hintDisplayed;
-    }
-
-    void isHintUsed() {
-        hintUsed = true;
-        hintDisplayed = false;
-        hintRequested = false;
-    }
-
     std::string getHint() {
-        std::string missingLetters = "";
-        for (char c : secretWord) {
-            if (guessedWord.find(c) == std::string::npos) {
-                missingLetters += c;
-            }
-        }
-
-        hint = std::string(1, missingLetters[1]);
-        
-        return hint;
+        return hintManager.getHint(secretWord, guessedWord);
     }
 };
+
 
 class TextureManager {
 private:
     sf::Texture treeTexture;
     sf::Texture headTexture;
     sf::Texture bodyTexture;
-    sf::Texture armTexture;
+    sf::Texture rightArmTexture;
+    sf::Texture leftArmTexture;
     sf::Texture legTexture;
 
 public:
@@ -200,14 +227,16 @@ public:
         treeTexture.loadFromFile("C:\\Users\\User\\Desktop\\IT\\PP\\Hangman\\HangmanParts\\HangmanTree.png");
         headTexture.loadFromFile("C:\\Users\\User\\Desktop\\IT\\PP\\Hangman\\HangmanParts\\HangmanHead.png");
         bodyTexture.loadFromFile("C:\\Users\\User\\Desktop\\IT\\PP\\Hangman\\HangmanParts\\HangmanOnlyBody.png");
-        armTexture.loadFromFile("C:\\Users\\User\\Desktop\\IT\\PP\\Hangman\\HangmanParts\\HangmanAll.png");
-        legTexture.loadFromFile("C:\\Users\\User\\Desktop\\IT\\PP\\Hangman\\HangmanParts\\HangmanAll.png");
+        rightArmTexture.loadFromFile("C:\\Users\\User\\Desktop\\IT\\PP\\Hangman\\HangmanParts\\HangmanRightHand.png");
+        leftArmTexture.loadFromFile("C:\\Users\\User\\Desktop\\IT\\PP\\Hangman\\HangmanParts\\HangmanLeftHand.png");
+        legTexture.loadFromFile("C:\\Users\\User\\Desktop\\IT\\PP\\Hangman\\HangmanParts\\HangmanLeftLeg.png");
     }
 
     sf::Texture& getTreeTexture() { return treeTexture; }
     sf::Texture& getHeadTexture() { return headTexture; }
     sf::Texture& getBodyTexture() { return bodyTexture; }
-    sf::Texture& getArmTexture() { return armTexture; }
+    sf::Texture& getRightArmTexture() { return rightArmTexture; }
+    sf::Texture& getLeftArmTexture() { return leftArmTexture; }
     sf::Texture& getLegTexture() { return legTexture; }
 };
 
@@ -224,21 +253,18 @@ private:
     sf::Sprite treeSprite;
     sf::Sprite headSprite;
     sf::Sprite bodySprite;
-    sf::Sprite armSprite;
+    sf::Sprite rightArmSprite;
+    sf::Sprite leftArmSprite;
     sf::Sprite legSprite;
 public:
     Renderer(HangmanGame& game) : game(game), windowSize(600), cellSize(30), window(sf::VideoMode(windowSize, windowSize), "Hangman Game"), grassGreen(124, 252, 0) {
-        bool bFontLoaded = false;
-        if (!bFontLoaded)
-        {
-            bFontLoaded = true;
-            font.loadFromFile("C:\\Users\\User\\Desktop\\IT\\PP\\Hangman\\Arial.ttf");
-            treeSprite.setTexture(textureManager.getTreeTexture());
-            headSprite.setTexture(textureManager.getHeadTexture());
-            bodySprite.setTexture(textureManager.getBodyTexture());
-            armSprite.setTexture(textureManager.getArmTexture());
-            legSprite.setTexture(textureManager.getLegTexture());
-        }
+        font.loadFromFile("C:\\Users\\User\\Desktop\\IT\\PP\\Hangman\\Arial.ttf");
+        treeSprite.setTexture(textureManager.getTreeTexture());
+        headSprite.setTexture(textureManager.getHeadTexture());
+        bodySprite.setTexture(textureManager.getBodyTexture());
+        rightArmSprite.setTexture(textureManager.getRightArmTexture());
+        leftArmSprite.setTexture(textureManager.getLeftArmTexture());
+        legSprite.setTexture(textureManager.getLegTexture());
     }
 
 
@@ -265,8 +291,8 @@ public:
                     else if (game.getGameState() == InProgress) {
                         game.guessLetter(static_cast<char>(event.text.unicode));
                     }
-                    if (event.text.unicode == 'h' && game.isHintRequested()) {
-                        game.makeHintDisplayed();
+                    if (event.text.unicode == 'h' && game.hintManager.isHintRequested()) {
+                        game.hintManager.makeHintDisplayed();
                     }
                 }
             }
@@ -305,7 +331,7 @@ public:
                 window.draw(text);
             }
 
-            if (game.isHintRequested()) {
+            if (game.hintManager.isHintRequested()) {
                 sf::Text hintRequest;
                 hintRequest.setFont(font);
                 hintRequest.setString("Would you like a hint? Press 'h' for a hint.");
@@ -315,12 +341,12 @@ public:
                 window.draw(hintRequest);
             }
 
-            if (game.isHintDisplayed()) {
+            if (game.hintManager.isHintDisplayed()) {
                 if (hintClock.getElapsedTime().asSeconds() < 7) {
                     displayHint();
                 }
                 else {
-                    game.isHintUsed();
+                    game.hintManager.isHintUsed();
                 }
 
             }
@@ -380,31 +406,23 @@ public:
         }
 
         if (hangmanParts > 2) {
-            sf::RectangleShape arm(sf::Vector2f(10, 20));
-            arm.setPosition(windowSize / 2, windowSize / 2 - 20);
-            arm.setFillColor(grassGreen);
-            window.draw(arm);
+            rightArmSprite.setPosition(5, 5);
+            window.draw(rightArmSprite);
         }
 
         if (hangmanParts > 3) {
-            sf::RectangleShape arm(sf::Vector2f(10, 20));
-            arm.setPosition(windowSize / 2 + 20, windowSize / 2 + 20);
-            arm.setFillColor(grassGreen);
-            window.draw(arm);
+            leftArmSprite.setPosition(5, 5);
+            window.draw(leftArmSprite);
         }
 
         if (hangmanParts > 4) {
-            sf::RectangleShape leg(sf::Vector2f(10, 20));
-            leg.setPosition(windowSize / 2 + 10, windowSize / 2 + 40);
-            leg.setFillColor(grassGreen);
-            window.draw(leg);
+            legSprite.setPosition(5, 5);
+            window.draw(legSprite);
         }
 
         if (hangmanParts > 5) {
-            sf::RectangleShape leg(sf::Vector2f(10, 20));
-            leg.setPosition(windowSize / 2 + 20, windowSize / 2 + 40);
-            leg.setFillColor(grassGreen);
-            window.draw(leg);
+            legSprite.setPosition(5, 5);
+            window.draw(legSprite);
         }
     }
 };
