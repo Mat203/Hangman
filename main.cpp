@@ -256,6 +256,7 @@ private:
     sf::Sprite rightArmSprite;
     sf::Sprite leftArmSprite;
     sf::Sprite legSprite;
+    sf::Image icon;
 public:
     Renderer(HangmanGame& game) : game(game), windowSize(600), cellSize(30), window(sf::VideoMode(windowSize, windowSize), "Hangman Game"), grassGreen(124, 252, 0) {
         font.loadFromFile("C:\\Users\\User\\Desktop\\IT\\PP\\Hangman\\Arial.ttf");
@@ -265,6 +266,8 @@ public:
         rightArmSprite.setTexture(textureManager.getRightArmTexture());
         leftArmSprite.setTexture(textureManager.getLeftArmTexture());
         legSprite.setTexture(textureManager.getLegTexture());
+        icon.loadFromFile("C:\\Users\\User\\Desktop\\IT\\PP\\Hangman\\HangmanParts\\HangmanIcon.png");
+        window.setIcon(icon.getSize().x, icon.getSize().y, icon.getPixelsPtr());
     }
 
 
@@ -311,71 +314,90 @@ public:
         window.clear(sf::Color::White);
 
         if (game.getGameState() == SelectingDifficulty) {
-            sf::Text selectDifficultyText;
-            selectDifficultyText.setFont(font);
-            selectDifficultyText.setString("Choose a difficulty: 1 - Easy, 2 - Medium, 3 - Hard");
-            selectDifficultyText.setCharacterSize(24);
-            selectDifficultyText.setPosition(10, windowSize / 2);
-            selectDifficultyText.setFillColor(grassGreen);
-            window.draw(selectDifficultyText);
+            renderSelectDifficulty();
         }
-
         else if (game.getGameState() == InProgress) {
-            for (int i = 0; i < game.getGuessedWord().size(); i++) {
-                sf::Text text;
-                text.setFont(font);
-                text.setString(std::string(1, game.getGuessedWord()[i]));
-                text.setCharacterSize(24);
-                text.setPosition(windowSize / 2 - game.getGuessedWord().size() * cellSize / 2 + i * cellSize, windowSize / 2);
-                text.setFillColor(grassGreen);
-                window.draw(text);
-            }
-
-            if (game.hintManager.isHintRequested()) {
-                sf::Text hintRequest;
-                hintRequest.setFont(font);
-                hintRequest.setString("Would you like a hint? Press 'h' for a hint.");
-                hintRequest.setCharacterSize(24);
-                hintRequest.setPosition(windowSize / 2-200, windowSize / 2 + 50);
-                hintRequest.setFillColor(grassGreen);
-                window.draw(hintRequest);
-            }
-
-            if (game.hintManager.isHintDisplayed()) {
-                if (hintClock.getElapsedTime().asSeconds() < 7) {
-                    displayHint();
-                }
-                else {
-                    game.hintManager.makeHintUsed();
-                }
-
-            }
-
-            drawHangman();
-            if (game.isGameOver()) {
-                game.setGameState(GameOver);
-            }
+            renderInProgress();
         }
-        
         else if (game.getGameState() == GameOver) {
-            sf::Text gameOverText;
-            gameOverText.setFont(font);
-            gameOverText.setCharacterSize(20);
-            gameOverText.setPosition(0, windowSize / 2 - 50);
-            gameOverText.setFillColor(grassGreen);
-
-            if (game.getGuessedWord() == game.getSecretWord()) {
-                gameOverText.setString("Congratulations! You guessed the word! Press '0' to restart");
-            }
-            else {
-                gameOverText.setString("Game over. The word was: " + game.getSecretWord() + " Press '0' to restart");
-            }
-
-            window.draw(gameOverText);
+            renderGameOver();
         }
 
         window.display();
     }
+
+    void renderSelectDifficulty() {
+        sf::Text selectDifficultyText;
+        selectDifficultyText.setFont(font);
+        selectDifficultyText.setString("Choose a difficulty: 1 - Easy, 2 - Medium, 3 - Hard");
+        selectDifficultyText.setCharacterSize(24);
+        selectDifficultyText.setPosition(10, windowSize / 2);
+        selectDifficultyText.setFillColor(grassGreen);
+        window.draw(selectDifficultyText);
+    }
+
+    void renderInProgress() {
+        renderGuessedWord();
+        if (game.hintManager.isHintRequested()) {
+            renderHintRequest();
+        }
+        if (game.hintManager.isHintDisplayed()) {
+            renderHint();
+        }
+        drawHangman();
+        if (game.isGameOver()) {
+            game.setGameState(GameOver);
+        }
+    }
+
+    void renderGuessedWord() {
+        for (int i = 0; i < game.getGuessedWord().size(); i++) {
+            sf::Text text;
+            text.setFont(font);
+            text.setString(std::string(1, game.getGuessedWord()[i]));
+            text.setCharacterSize(24);
+            text.setPosition(windowSize / 2 - game.getGuessedWord().size() * cellSize / 2 + i * cellSize, windowSize / 2);
+            text.setFillColor(grassGreen);
+            window.draw(text);
+        }
+    }
+
+    void renderHintRequest() {
+        sf::Text hintRequest;
+        hintRequest.setFont(font);
+        hintRequest.setString("Would you like a hint? Press 'h' for a hint.");
+        hintRequest.setCharacterSize(24);
+        hintRequest.setPosition(windowSize / 2 - 200, windowSize / 2 + 50);
+        hintRequest.setFillColor(grassGreen);
+        window.draw(hintRequest);
+    }
+
+    void renderHint() {
+        if (hintClock.getElapsedTime().asSeconds() < 7) {
+            displayHint();
+        }
+        else {
+            game.hintManager.makeHintUsed();
+        }
+    }
+
+    void renderGameOver() {
+        sf::Text gameOverText;
+        gameOverText.setFont(font);
+        gameOverText.setCharacterSize(20);
+        gameOverText.setPosition(0, windowSize / 2 - 50);
+        gameOverText.setFillColor(grassGreen);
+
+        if (game.getGuessedWord() == game.getSecretWord()) {
+            gameOverText.setString("Congratulations! You guessed the word! Press '0' to restart");
+        }
+        else {
+            gameOverText.setString("Game over. The word was: " + game.getSecretWord() + " Press '0' to restart");
+        }
+
+        window.draw(gameOverText);
+    }
+
 
     void displayHint() {
         sf::Text hint;
