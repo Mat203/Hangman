@@ -34,6 +34,10 @@ public:
     void addHangmanParts() {
         hangmanParts++;
     }
+
+    void getHangmanParts(int parts) {
+        hangmanParts = parts;
+    }
 };
 
 class WordManager {
@@ -210,6 +214,48 @@ public:
     std::string getHint() {
         return hintManager.getHint(secretWord, guessedWord);
     }
+
+    void saveGame() {
+        std::ofstream file("savegame.txt");
+        if (file.is_open()) {
+            file << secretWord << std::endl;
+            file << guessedWord << std::endl;
+            file << static_cast<int>(difficulty) << std::endl;
+            for (char letter : usedLetters) {
+                file << letter << ' ';
+            }
+            file << std::endl;
+            file << hangman.getHangmanParts() << std::endl;
+            file.close();
+        }
+    }
+
+    void loadGame() {
+        std::ifstream file("savegame.txt");
+        if (file.is_open()) {
+            std::getline(file, secretWord);
+            std::getline(file, guessedWord);
+            int diff;
+            file >> diff;
+            difficulty = static_cast<Difficulty>(diff);
+            file.ignore(); 
+            std::string lettersLine;
+            std::getline(file, lettersLine);
+            std::istringstream iss(lettersLine);
+            char letter;
+            while (iss >> letter) {
+                usedLetters.push_back(letter);
+            }
+            int hangmanParts;
+            file >> hangmanParts;
+            hangman.getHangmanParts(hangmanParts);
+            file.close();
+            hintManager.reset();
+            gameState = InProgress;
+        }
+    }
+
+
 };
 
 
@@ -288,15 +334,22 @@ public:
                     if (event.text.unicode == '0' && game.getGameState() == GameOver) { 
                         game.setGameState(SelectingDifficulty);
                     }
+                    else if (event.text.unicode == '9') {
+                        game.loadGame();
+                    }
                     else if (game.getGameState() == SelectingDifficulty) {
                         handleDifficultyInput(game, static_cast<char>(event.text.unicode));
+                    }
+                    else if (event.text.unicode == 'h' && game.hintManager.isHintRequested()) {
+                        game.hintManager.makeHintDisplayed();
+                    }
+                    else if (event.text.unicode == '8') {
+                        game.saveGame();
                     }
                     else if (game.getGameState() == InProgress) {
                         game.guessLetter(static_cast<char>(event.text.unicode));
                     }
-                    if (event.text.unicode == 'h' && game.hintManager.isHintRequested()) {
-                        game.hintManager.makeHintDisplayed();
-                    }
+                    
                 }
             }
         }
@@ -315,9 +368,12 @@ public:
 
         if (game.getGameState() == SelectingDifficulty) {
             renderSelectDifficulty();
+            renderLoadGameText();
+            hintClock.restart();
         }
         else if (game.getGameState() == InProgress) {
             renderInProgress();
+            renderSaveGameText();
         }
         else if (game.getGameState() == GameOver) {
             renderGameOver();
@@ -334,6 +390,26 @@ public:
         selectDifficultyText.setPosition(10, windowSize / 2);
         selectDifficultyText.setFillColor(grassGreen);
         window.draw(selectDifficultyText);
+    }
+
+    void renderLoadGameText() {
+        sf::Text loadGameText;
+        loadGameText.setFont(font);
+        loadGameText.setString("Press 9 to load a game");
+        loadGameText.setCharacterSize(24);
+        loadGameText.setPosition(10, windowSize / 2 + 30); 
+        loadGameText.setFillColor(grassGreen);
+        window.draw(loadGameText);
+    }
+
+    void renderSaveGameText() {
+        sf::Text saveGameText;
+        saveGameText.setFont(font);
+        saveGameText.setString("Press 8 to save a game");
+        saveGameText.setCharacterSize(24);
+        saveGameText.setPosition(window.getSize().x - saveGameText.getGlobalBounds().width - 10, 10); 
+        saveGameText.setFillColor(grassGreen);
+        window.draw(saveGameText);
     }
 
     void renderInProgress() {
